@@ -1,0 +1,13 @@
+{
+  "name": "Le Feuilleton",
+  "short_name": "Feuilleton",
+  "description": "Un chapitre à la fois, diffusé par QR code.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#16140f",
+  "theme_color": "#16140f",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

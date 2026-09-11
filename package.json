@@ -1,0 +1,17 @@
+{
+  "name": "feuilleton-qr",
+  "version": "1.0.0",
+  "description": "Feuilleton diffusé par QR code — un chapitre à la fois, avec historique de lecture.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^2.0.1",
+    "pg": "^8.13.1"
+  }
+}

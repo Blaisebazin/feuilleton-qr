@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Admin — Le Feuilleton</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="admin-body">
+  <div class="admin-wrap">
+
+    <div id="login-view" class="card login-card">
+      <h2>Connexion admin</h2>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" autocomplete="current-password" />
+      </div>
+      <button class="btn" id="login-btn">Se connecter</button>
+      <p class="form-msg error" id="login-msg" hidden></p>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="admin-header">
+        <h1>Publier un chapitre</h1>
+        <button id="logout-btn">Se déconnecter</button>
+      </div>
+
+      <div class="card">
+        <h2>Titre du livre / de la série</h2>
+        <div class="field">
+          <label for="book-title">Affiché tout en haut, au-dessus de chaque chapitre</label>
+          <input type="text" id="book-title" />
+        </div>
+        <div class="field">
+          <label for="synopsis">Synopsis (facultatif, affiché juste sous le titre)</label>
+          <textarea id="synopsis" style="min-height: 100px;" placeholder="Quelques phrases pour présenter l'histoire aux lecteurs."></textarea>
+        </div>
+        <button class="btn secondary" id="save-title-btn">Enregistrer le titre</button>
+        <p class="form-msg" id="title-msg" hidden></p>
+      </div>
+
+      <form id="chapter-form" class="card">
+        <h2 id="form-heading">Nouveau chapitre</h2>
+        <div class="field">
+          <label for="title">Titre</label>
+          <input type="text" id="title" required />
+        </div>
+        <div class="field">
+          <label for="text">Texte du chapitre</label>
+          <textarea id="text" required placeholder="Séparez les paragraphes par une ligne vide."></textarea>
+        </div>
+        <div class="field" id="current-image-field" hidden>
+          <label>Illustration actuelle</label>
+          <img id="current-image-preview" style="max-width:160px;border-radius:4px;display:block;margin-bottom:8px;" />
+          <label style="display:flex;align-items:center;gap:6px;font-style:normal;">
+            <input type="checkbox" id="remove-image" style="width:auto;" /> Retirer cette image
+          </label>
+        </div>
+        <div class="field">
+          <label for="image" id="image-label">Illustration (facultatif)</label>
+          <input type="file" id="image" accept="image/*" />
+        </div>
+        <div class="field">
+          <label for="author">Auteur</label>
+          <input type="text" id="author" value="Blaise BAZINGA" />
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" type="submit" id="submit-btn">Publier ce chapitre</button>
+          <button class="btn secondary hidden" type="button" id="cancel-edit-btn">Annuler la modification</button>
+        </div>
+        <p class="form-msg" id="form-msg" hidden></p>
+      </form>
+
+      <div class="card">
+        <h2>Chapitres publiés</h2>
+        <div id="chapters-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

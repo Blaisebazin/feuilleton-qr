@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#16140f"/>
+  <g>
+    <path d="M146 96h180l60 60v260a20 20 0 0 1-20 20H146a20 20 0 0 1-20-20V116a20 20 0 0 1 20-20z" fill="#efe6cf"/>
+    <path d="M326 96l60 60h-40a20 20 0 0 1-20-20V96z" fill="#d8cba0"/>
+    <rect x="166" y="200" width="140" height="10" rx="5" fill="#7c2e2e"/>
+    <rect x="166" y="232" width="180" height="10" rx="5" fill="#241f17" opacity="0.75"/>
+    <rect x="166" y="264" width="180" height="10" rx="5" fill="#241f17" opacity="0.75"/>
+    <rect x="166" y="296" width="120" height="10" rx="5" fill="#241f17" opacity="0.75"/>
+    <text x="166" y="366" font-family="Georgia, serif" font-style="italic" font-size="28" fill="#a9822f">— B.B.</text>
+  </g>
+</svg>

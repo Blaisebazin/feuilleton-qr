@@ -185,7 +185,6 @@
     const hasMarkers = blocks.some((b) => markerRegex.test(b));
 
     let imgIndex = 0;
-    let isFirstParagraph = true;
 
     if (!hasMarkers && images.length) {
       el.content.appendChild(makeImageEl(images[0], currentChapter.title));
@@ -201,10 +200,9 @@
         continue;
       }
       const p = document.createElement('p');
-      p.className = 'chapter-p' + (isFirstParagraph ? ' first-p' : '');
+      p.className = 'chapter-p';
       p.textContent = block;
       el.content.appendChild(p);
-      isFirstParagraph = false;
     }
 
     // Photos restantes (uploadées sans marqueur associé) : ajoutées à la fin.

@@ -156,13 +156,13 @@ body {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 230px;
+  max-height: clamp(110px, 20vh, 220px);
   object-fit: cover;
 }
 
 .page-body {
   flex: 1;
-  min-height: 0;
+  min-height: 140px;
   position: relative;
   padding: 6px 28px 0;
   overflow: hidden;

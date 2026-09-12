@@ -66,6 +66,7 @@ app.get('/api/chapters/latest', async (req, res, next) => {
   try {
     const result = await db.getLatestWithPosition();
     if (!result) return res.status(404).json({ error: 'Aucun chapitre publié.' });
+    result.chapter.views = await db.incrementChapterView(result.chapter.id);
     res.json(result);
   } catch (err) { next(err); }
 });
@@ -74,7 +75,22 @@ app.get('/api/chapters/:id', async (req, res, next) => {
   try {
     const result = await db.getChapterWithPosition(req.params.id);
     if (!result) return res.status(404).json({ error: 'Chapitre introuvable.' });
+    result.chapter.views = await db.incrementChapterView(result.chapter.id);
     res.json(result);
+  } catch (err) { next(err); }
+});
+
+app.post('/api/chapters/:id/like', async (req, res, next) => {
+  try {
+    const likes = await db.incrementChapterLike(req.params.id);
+    if (likes === null) return res.status(404).json({ error: 'Chapitre introuvable.' });
+    res.json({ likes });
+  } catch (err) { next(err); }
+});
+
+app.post('/api/book/like', async (req, res, next) => {
+  try {
+    res.json({ bookLikes: await db.incrementBookLike() });
   } catch (err) { next(err); }
 });
 

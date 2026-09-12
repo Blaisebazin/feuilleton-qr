@@ -16,7 +16,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changemoi';
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 3 * 1024 * 1024 }, // 3 Mo : reste raisonnable une fois encodé en base64
+  limits: { fileSize: 3 * 1024 * 1024, files: 6 }, // 3 Mo/photo, 6 photos max par chapitre
   fileFilter: (req, file, cb) => {
     if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true);
     else cb(new Error('Format d\'image non supporté.'));
@@ -24,7 +24,6 @@ const upload = multer({
 });
 
 function fileToDataUrl(file) {
-  if (!file) return null;
   return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 }
 
@@ -119,7 +118,7 @@ app.put('/api/admin/settings', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-app.post('/api/admin/chapters', requireAdmin, upload.single('image'), async (req, res, next) => {
+app.post('/api/admin/chapters', requireAdmin, upload.array('images', 6), async (req, res, next) => {
   try {
     const { title, text, author } = req.body || {};
     if (!title || !title.trim() || !text || !text.trim()) {
@@ -129,21 +128,25 @@ app.post('/api/admin/chapters', requireAdmin, upload.single('image'), async (req
       title: title.trim(),
       text: text.trim(),
       author: (author || '').trim(),
-      imageData: fileToDataUrl(req.file)
+      images: (req.files || []).map(fileToDataUrl)
     });
     res.status(201).json(chapter);
   } catch (err) { next(err); }
 });
 
-app.put('/api/admin/chapters/:id', requireAdmin, upload.single('image'), async (req, res, next) => {
+app.put('/api/admin/chapters/:id', requireAdmin, upload.array('images', 6), async (req, res, next) => {
   try {
-    const { title, text, author, removeImage } = req.body || {};
+    const { title, text, author, removeImageIndices } = req.body || {};
+    let indices = [];
+    if (removeImageIndices) {
+      try { indices = JSON.parse(removeImageIndices); } catch { indices = []; }
+    }
     const chapter = await db.updateChapter(req.params.id, {
       title,
       text,
       author,
-      imageData: fileToDataUrl(req.file),
-      removeImage: removeImage === 'true'
+      newImages: (req.files || []).map(fileToDataUrl),
+      removeImageIndices: indices
     });
     if (!chapter) return res.status(404).json({ error: 'Chapitre introuvable.' });
     res.json(chapter);

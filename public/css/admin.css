@@ -174,3 +174,32 @@ body.admin-body {
 }
 
 .hidden { display: none !important; }
+
+.settings-card summary {
+  cursor: pointer;
+  font-family: var(--serif-display);
+  font-size: 16px;
+  color: var(--ink);
+  list-style: none;
+}
+
+.settings-card summary::-webkit-details-marker { display: none; }
+
+.settings-card summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--gold);
+  transition: transform 0.15s ease;
+}
+
+.settings-card[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.settings-card summary span {
+  font-family: var(--serif-body);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-muted);
+}

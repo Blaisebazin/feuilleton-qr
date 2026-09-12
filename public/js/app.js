@@ -158,7 +158,9 @@
   }
 
   function paragraphsOf(text) {
-    return text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    // Un retour à la ligne suffit à marquer un nouveau paragraphe (plus besoin de
+    // ligne vide) : on découpe sur un ou plusieurs retours à la ligne consécutifs.
+    return text.split(/\n+/).map((p) => p.trim()).filter(Boolean);
   }
 
   function makeImageEl(src, alt) {
@@ -183,6 +185,7 @@
     const hasMarkers = blocks.some((b) => markerRegex.test(b));
 
     let imgIndex = 0;
+    let isFirstParagraph = true;
 
     if (!hasMarkers && images.length) {
       el.content.appendChild(makeImageEl(images[0], currentChapter.title));
@@ -198,9 +201,10 @@
         continue;
       }
       const p = document.createElement('p');
-      p.className = 'chapter-p';
+      p.className = 'chapter-p' + (isFirstParagraph ? ' first-p' : '');
       p.textContent = block;
       el.content.appendChild(p);
+      isFirstParagraph = false;
     }
 
     // Photos restantes (uploadées sans marqueur associé) : ajoutées à la fin.

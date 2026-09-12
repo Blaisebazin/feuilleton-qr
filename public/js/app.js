@@ -16,6 +16,11 @@
     scrollArea: document.getElementById('scroll-area'),
     scrollHint: document.getElementById('scroll-hint'),
     archiveBadge: document.getElementById('archive-badge'),
+    viewCount: document.getElementById('view-count'),
+    likeChapterBtn: document.getElementById('like-chapter-btn'),
+    chapterLikeCount: document.getElementById('chapter-like-count'),
+    likeBookBtn: document.getElementById('like-book-btn'),
+    bookLikeCount: document.getElementById('book-like-count'),
     btnPreviousChapter: document.getElementById('btn-previous-chapter'),
     btnHistory: document.getElementById('btn-history'),
     btnLatest: document.getElementById('btn-latest'),
@@ -51,7 +56,7 @@
 
   async function loadSiteTitle() {
     try {
-      const { bookTitle: bt, synopsis } = await fetchJSON('/api/settings');
+      const { bookTitle: bt, synopsis, bookLikes } = await fetchJSON('/api/settings');
       bookTitle = bt || '';
       el.siteTitle.textContent = bookTitle;
       document.title = bookTitle || 'Le Feuilleton';
@@ -62,10 +67,43 @@
         el.synopsisToggle.hidden = true;
         el.siteSynopsis.hidden = true;
       }
+      el.bookLikeCount.textContent = bookLikes || 0;
+      if (localStorage.getItem('feuilleton_book_liked') === '1') {
+        el.likeBookBtn.classList.add('liked');
+      }
     } catch {
       /* pas bloquant si ça échoue */
     }
   }
+
+  el.likeBookBtn.addEventListener('click', async () => {
+    if (localStorage.getItem('feuilleton_book_liked') === '1') return;
+    try {
+      const { bookLikes } = await fetchJSON('/api/book/like', { method: 'POST' });
+      el.bookLikeCount.textContent = bookLikes;
+      el.likeBookBtn.classList.add('liked');
+      localStorage.setItem('feuilleton_book_liked', '1');
+    } catch {
+      /* pas bloquant */
+    }
+  });
+
+  function likedChaptersKey(id) {
+    return `feuilleton_liked_${id}`;
+  }
+
+  el.likeChapterBtn.addEventListener('click', async () => {
+    if (!currentChapter) return;
+    if (localStorage.getItem(likedChaptersKey(currentChapter.id)) === '1') return;
+    try {
+      const { likes } = await fetchJSON(`/api/chapters/${currentChapter.id}/like`, { method: 'POST' });
+      el.chapterLikeCount.textContent = likes;
+      el.likeChapterBtn.classList.add('liked');
+      localStorage.setItem(likedChaptersKey(currentChapter.id), '1');
+    } catch {
+      /* pas bloquant */
+    }
+  });
 
   el.synopsisToggle.addEventListener('click', () => {
     const isOpen = !el.siteSynopsis.hidden;
@@ -94,8 +132,17 @@
     renderChapterShell();
     renderChapterContent();
     renderChrome();
+    renderMeta();
     el.scrollArea.scrollTop = 0;
     requestAnimationFrame(updateScrollHint);
+  }
+
+  function renderMeta() {
+    const views = currentChapter.views || 0;
+    el.viewCount.textContent = `${views} vue${views > 1 ? 's' : ''}`;
+    el.chapterLikeCount.textContent = currentChapter.likes || 0;
+    const liked = localStorage.getItem(likedChaptersKey(currentChapter.id)) === '1';
+    el.likeChapterBtn.classList.toggle('liked', liked);
   }
 
   function syncUrl() {

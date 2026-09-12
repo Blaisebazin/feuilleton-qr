@@ -1,6 +1,10 @@
 body.admin-body {
   align-items: stretch;
   padding: 0;
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+  display: block;
 }
 
 .admin-wrap {

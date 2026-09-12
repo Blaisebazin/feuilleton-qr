@@ -150,6 +150,66 @@ body {
   text-align: right;
 }
 
+/* ---------- Vues & likes ---------- */
+
+.chapter-meta {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(239,230,207,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.view-count {
+  font-family: var(--serif-body);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.like-btn {
+  appearance: none;
+  border: 1px solid rgba(239,230,207,0.25);
+  background: none;
+  color: var(--text-dim);
+  font-family: var(--serif-body);
+  font-size: 13.5px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.like-btn .like-icon {
+  font-size: 14px;
+  filter: grayscale(1);
+  opacity: 0.6;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.like-btn.liked {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.like-btn.liked .like-icon {
+  filter: none;
+  opacity: 1;
+}
+
+.like-btn:disabled {
+  cursor: default;
+}
+
+.like-btn.book-like {
+  margin-top: 6px;
+}
+
 /* ---------- Bas de page : historique / partage ---------- */
 
 .below-page {

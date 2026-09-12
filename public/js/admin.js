@@ -18,9 +18,8 @@
     formHeading: document.getElementById('form-heading'),
     submitBtn: document.getElementById('submit-btn'),
     cancelEditBtn: document.getElementById('cancel-edit-btn'),
-    currentImageField: document.getElementById('current-image-field'),
-    currentImagePreview: document.getElementById('current-image-preview'),
-    removeImage: document.getElementById('remove-image'),
+    currentImagesField: document.getElementById('current-images-field'),
+    currentImagesList: document.getElementById('current-images-list'),
     bookTitle: document.getElementById('book-title'),
     settingsSummaryTitle: document.getElementById('settings-summary-title'),
     synopsis: document.getElementById('synopsis'),
@@ -120,6 +119,34 @@
   });
 
   let editingId = null;
+  let pendingRemoveIndices = new Set();
+
+  function renderCurrentImages(images) {
+    pendingRemoveIndices = new Set();
+    el.currentImagesList.innerHTML = '';
+    if (!images || !images.length) {
+      el.currentImagesField.hidden = true;
+      return;
+    }
+    el.currentImagesField.hidden = false;
+    images.forEach((src, idx) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;width:72px;height:72px;';
+      wrap.innerHTML = `
+        <img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" />
+        <button type="button" data-idx="${idx}" title="Retirer cette photo"
+          style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;
+          background:#7c2e2e;color:#fff;border:2px solid #efe6cf;cursor:pointer;font-size:13px;line-height:1;">×</button>
+      `;
+      const btn = wrap.querySelector('button');
+      btn.addEventListener('click', () => {
+        pendingRemoveIndices.add(idx);
+        wrap.style.opacity = '0.25';
+        btn.disabled = true;
+      });
+      el.currentImagesList.appendChild(wrap);
+    });
+  }
 
   function startEdit(chapter) {
     editingId = chapter.id;
@@ -127,14 +154,7 @@
     el.text.value = chapter.text;
     el.author.value = chapter.author;
     el.image.value = '';
-    el.removeImage.checked = false;
-
-    if (chapter.image) {
-      el.currentImageField.hidden = false;
-      el.currentImagePreview.src = chapter.image;
-    } else {
-      el.currentImageField.hidden = true;
-    }
+    renderCurrentImages(chapter.images);
 
     el.formHeading.textContent = `Modifier « ${chapter.title} »`;
     el.submitBtn.textContent = 'Enregistrer les modifications';
@@ -144,9 +164,11 @@
 
   function cancelEdit() {
     editingId = null;
+    pendingRemoveIndices = new Set();
     el.form.reset();
     el.author.value = 'Blaise BAZINGA';
-    el.currentImageField.hidden = true;
+    el.currentImagesField.hidden = true;
+    el.currentImagesList.innerHTML = '';
     el.formHeading.textContent = 'Nouveau chapitre';
     el.submitBtn.textContent = 'Publier ce chapitre';
     el.cancelEditBtn.classList.add('hidden');
@@ -162,12 +184,12 @@
     fd.append('title', el.title.value);
     fd.append('text', el.text.value);
     fd.append('author', el.author.value);
-    if (el.image.files[0]) fd.append('image', el.image.files[0]);
+    for (const file of el.image.files) fd.append('images', file);
 
     try {
       let res;
       if (editingId) {
-        if (el.removeImage.checked && !el.image.files[0]) fd.append('removeImage', 'true');
+        fd.append('removeImageIndices', JSON.stringify([...pendingRemoveIndices]));
         res = await authedFetch(`/api/admin/chapters/${editingId}`, { method: 'PUT', body: fd });
       } else {
         res = await authedFetch('/api/admin/chapters', { method: 'POST', body: fd });
@@ -211,7 +233,7 @@
       row.className = 'chapter-row';
       row.innerHTML = `
         <div class="info">
-          <span class="t">${escapeHTML(c.title)}${i === 0 ? '<span class="tag-latest"> · chapitre actuel</span>' : ''}${c.image ? ' 🖼' : ''}</span>
+          <span class="t">${escapeHTML(c.title)}${i === 0 ? '<span class="tag-latest"> · chapitre actuel</span>' : ''}${c.images && c.images.length ? ` 🖼×${c.images.length}` : ''}</span>
           <span class="d">${fmt.format(new Date(c.publishedAt))} — ${escapeHTML(c.author)}</span>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">

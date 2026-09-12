@@ -27,9 +27,9 @@
         <button id="logout-btn">Se déconnecter</button>
       </div>
 
-      <div class="card">
-        <h2>Titre du livre / de la série</h2>
-        <div class="field">
+      <details class="card settings-card" id="book-settings">
+        <summary>Titre du livre / synopsis <span id="settings-summary-title"></span></summary>
+        <div class="field" style="margin-top:16px;">
           <label for="book-title">Affiché tout en haut, au-dessus de chaque chapitre</label>
           <input type="text" id="book-title" />
         </div>
@@ -39,7 +39,7 @@
         </div>
         <button class="btn secondary" id="save-title-btn">Enregistrer le titre</button>
         <p class="form-msg" id="title-msg" hidden></p>
-      </div>
+      </details>
 
       <form id="chapter-form" class="card">
         <h2 id="form-heading">Nouveau chapitre</h2>

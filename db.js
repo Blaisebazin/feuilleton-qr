@@ -35,6 +35,8 @@ async function initDb() {
   // pour les bases créées avant l'introduction du multi-images, on l'ajoute explicitement.
   await pool.query(`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   await pool.query(`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS image_data TEXT;`);
+  await pool.query(`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS views INTEGER NOT NULL DEFAULT 0;`);
+  await pool.query(`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS likes INTEGER NOT NULL DEFAULT 0;`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -76,6 +78,10 @@ async function initDb() {
     `INSERT INTO settings (key, value) VALUES ('synopsis', '')
      ON CONFLICT (key) DO NOTHING`
   );
+  await pool.query(
+    `INSERT INTO settings (key, value) VALUES ('bookLikes', '0')
+     ON CONFLICT (key) DO NOTHING`
+  );
 }
 
 function toChapterDTO(row) {
@@ -85,6 +91,8 @@ function toChapterDTO(row) {
     text: row.chapter_text,
     author: row.author,
     images: Array.isArray(row.images) ? row.images : [],
+    views: row.views || 0,
+    likes: row.likes || 0,
     publishedAt: row.published_at.toISOString()
   };
 }
@@ -160,12 +168,38 @@ async function deleteChapter(id) {
   return rowCount > 0;
 }
 
+async function incrementChapterView(id) {
+  const { rows } = await pool.query(
+    'UPDATE chapters SET views = views + 1 WHERE id = $1 RETURNING views',
+    [id]
+  );
+  return rows.length ? rows[0].views : null;
+}
+
+async function incrementChapterLike(id) {
+  const { rows } = await pool.query(
+    'UPDATE chapters SET likes = likes + 1 WHERE id = $1 RETURNING likes',
+    [id]
+  );
+  return rows.length ? rows[0].likes : null;
+}
+
+async function incrementBookLike() {
+  const { rows } = await pool.query(
+    `INSERT INTO settings (key, value) VALUES ('bookLikes', '1')
+     ON CONFLICT (key) DO UPDATE SET value = (COALESCE(settings.value, '0')::int + 1)::text
+     RETURNING value`
+  );
+  return parseInt(rows[0].value, 10);
+}
+
 async function getSettings() {
   const { rows } = await pool.query('SELECT key, value FROM settings');
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
   return {
     bookTitle: map.bookTitle || 'Mon Feuilleton',
-    synopsis: map.synopsis || ''
+    synopsis: map.synopsis || '',
+    bookLikes: parseInt(map.bookLikes || '0', 10)
   };
 }
 
@@ -191,6 +225,9 @@ module.exports = {
   createChapter,
   updateChapter,
   deleteChapter,
+  incrementChapterView,
+  incrementChapterLike,
+  incrementBookLike,
   getSettings,
   updateSettings,
   DEFAULT_AUTHOR

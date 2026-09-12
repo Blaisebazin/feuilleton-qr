@@ -31,6 +31,10 @@ async function initDb() {
       published_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+  // CREATE TABLE IF NOT EXISTS n'ajoute pas de colonne à une table déjà existante :
+  // pour les bases créées avant l'introduction du multi-images, on l'ajoute explicitement.
+  await pool.query(`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+  await pool.query(`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS image_data TEXT;`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,

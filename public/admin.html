@@ -49,18 +49,19 @@
         </div>
         <div class="field">
           <label for="text">Texte du chapitre</label>
-          <textarea id="text" required placeholder="Séparez les paragraphes par une ligne vide."></textarea>
+          <textarea id="text" required placeholder="Séparez les paragraphes par une ligne vide. Tapez [image] sur sa propre ligne pour insérer une photo à cet endroit."></textarea>
         </div>
-        <div class="field" id="current-image-field" hidden>
-          <label>Illustration actuelle</label>
-          <img id="current-image-preview" style="max-width:160px;border-radius:4px;display:block;margin-bottom:8px;" />
-          <label style="display:flex;align-items:center;gap:6px;font-style:normal;">
-            <input type="checkbox" id="remove-image" style="width:auto;" /> Retirer cette image
-          </label>
+        <div class="field" id="current-images-field" hidden>
+          <label>Photos actuelles</label>
+          <div id="current-images-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
         </div>
         <div class="field">
-          <label for="image" id="image-label">Illustration (facultatif)</label>
-          <input type="file" id="image" accept="image/*" />
+          <label for="image" id="image-label">Ajouter des photos (facultatif)</label>
+          <input type="file" id="image" accept="image/*" multiple />
+          <p style="font-size:12px;font-style:italic;color:var(--text-muted);margin:6px 0 0;">
+            Tapez <code>[image]</code> sur sa propre ligne dans le texte pour choisir où chaque photo s'affiche, dans l'ordre d'ajout.
+            Une photo sans <code>[image]</code> correspondant s'ajoute à la fin du chapitre.
+          </p>
         </div>
         <div class="field">
           <label for="author">Auteur</label>

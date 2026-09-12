@@ -1,7 +1,6 @@
 // db.js — Accès aux données via Postgres (Supabase, ou toute base Postgres compatible).
-// Remplace l'ancien stockage dans data/db.json, qui disparaissait à chaque redémarrage
-// sur le plan gratuit de Render. Les images sont stockées directement en base
-// (en data URL base64) pour éviter toute dépendance à un disque local.
+// Les images sont stockées directement en base (en data URL base64), plusieurs par
+// chapitre, dans une colonne JSONB "images" (tableau ordonné).
 
 const { Pool } = require('pg');
 const crypto = require('crypto');
@@ -28,6 +27,7 @@ async function initDb() {
       chapter_text TEXT NOT NULL,
       author TEXT NOT NULL,
       image_data TEXT,
+      images JSONB NOT NULL DEFAULT '[]'::jsonb,
       published_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
@@ -38,17 +38,26 @@ async function initDb() {
     );
   `);
 
+  // Migration douce : les chapitres créés avant l'introduction du support multi-images
+  // avaient leur unique photo dans image_data. On la reprend dans le tableau images.
+  await pool.query(`
+    UPDATE chapters
+    SET images = jsonb_build_array(image_data)
+    WHERE image_data IS NOT NULL AND images = '[]'::jsonb
+  `);
+
   const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM chapters');
   if (rows[0].count === 0) {
     await pool.query(
-      `INSERT INTO chapters (id, title, chapter_text, author, image_data, published_at)
-       VALUES ($1, $2, $3, $4, NULL, now())`,
+      `INSERT INTO chapters (id, title, chapter_text, author, images, published_at)
+       VALUES ($1, $2, $3, $4, '[]'::jsonb, now())`,
       [
         crypto.randomUUID(),
         'Chapitre 1 — Le commencement',
         "Ceci est le premier chapitre de votre feuilleton.\n\n" +
           "Remplacez ce texte depuis l'espace admin (/admin.html) pour publier votre propre histoire. " +
           "Chaque nouveau chapitre que vous publiez devient automatiquement celui affiché par défaut aux lecteurs.\n\n" +
+          "Astuce : tapez [image] sur sa propre ligne à l'endroit où vous voulez insérer une photo.\n\n" +
           "Le QR code de votre feuilleton peut toujours pointer vers la même adresse : il affichera toujours le dernier chapitre en date.",
         DEFAULT_AUTHOR
       ]
@@ -71,7 +80,7 @@ function toChapterDTO(row) {
     title: row.title,
     text: row.chapter_text,
     author: row.author,
-    image: row.image_data || null,
+    images: Array.isArray(row.images) ? row.images : [],
     publishedAt: row.published_at.toISOString()
   };
 }
@@ -85,14 +94,14 @@ async function listChaptersFull() {
 
 async function listChaptersLight() {
   const { rows } = await pool.query(
-    'SELECT id, title, author, published_at, image_data FROM chapters ORDER BY published_at DESC'
+    'SELECT id, title, author, published_at, images FROM chapters ORDER BY published_at DESC'
   );
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
     author: r.author,
     publishedAt: r.published_at.toISOString(),
-    hasImage: !!r.image_data
+    imageCount: Array.isArray(r.images) ? r.images.length : 0
   }));
 }
 
@@ -109,18 +118,18 @@ async function getLatestWithPosition() {
   return { chapter: list[0], index: 0, total: list.length };
 }
 
-async function createChapter({ title, text, author, imageData }) {
+async function createChapter({ title, text, author, images }) {
   const id = crypto.randomUUID();
   const { rows } = await pool.query(
-    `INSERT INTO chapters (id, title, chapter_text, author, image_data, published_at)
-     VALUES ($1, $2, $3, $4, $5, now())
+    `INSERT INTO chapters (id, title, chapter_text, author, images, published_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, now())
      RETURNING *`,
-    [id, title, text, author || DEFAULT_AUTHOR, imageData || null]
+    [id, title, text, author || DEFAULT_AUTHOR, JSON.stringify(images || [])]
   );
   return toChapterDTO(rows[0]);
 }
 
-async function updateChapter(id, { title, text, author, imageData, removeImage }) {
+async function updateChapter(id, { title, text, author, newImages, removeImageIndices }) {
   const { rows: existingRows } = await pool.query('SELECT * FROM chapters WHERE id = $1', [id]);
   if (!existingRows.length) return null;
   const existing = existingRows[0];
@@ -128,14 +137,16 @@ async function updateChapter(id, { title, text, author, imageData, removeImage }
   const newTitle = title && title.trim() ? title.trim() : existing.title;
   const newText = text && text.trim() ? text.trim() : existing.chapter_text;
   const newAuthor = author && author.trim() ? author.trim() : existing.author;
-  let newImage = existing.image_data;
-  if (removeImage) newImage = null;
-  if (imageData) newImage = imageData;
+
+  const currentImages = Array.isArray(existing.images) ? existing.images : [];
+  const toRemove = new Set(removeImageIndices || []);
+  const kept = currentImages.filter((_, idx) => !toRemove.has(idx));
+  const finalImages = [...kept, ...(newImages || [])];
 
   const { rows } = await pool.query(
-    `UPDATE chapters SET title = $1, chapter_text = $2, author = $3, image_data = $4
+    `UPDATE chapters SET title = $1, chapter_text = $2, author = $3, images = $4::jsonb
      WHERE id = $5 RETURNING *`,
-    [newTitle, newText, newAuthor, newImage, id]
+    [newTitle, newText, newAuthor, JSON.stringify(finalImages), id]
   );
   return toChapterDTO(rows[0]);
 }

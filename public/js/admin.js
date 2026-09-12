@@ -22,6 +22,7 @@
     currentImagePreview: document.getElementById('current-image-preview'),
     removeImage: document.getElementById('remove-image'),
     bookTitle: document.getElementById('book-title'),
+    settingsSummaryTitle: document.getElementById('settings-summary-title'),
     synopsis: document.getElementById('synopsis'),
     saveTitleBtn: document.getElementById('save-title-btn'),
     titleMsg: document.getElementById('title-msg')
@@ -67,6 +68,7 @@
       const data = await res.json();
       el.bookTitle.value = data.bookTitle || '';
       el.synopsis.value = data.synopsis || '';
+      el.settingsSummaryTitle.textContent = data.bookTitle ? `— actuellement « ${data.bookTitle} »` : '';
     } catch {
       /* pas bloquant */
     }
@@ -83,6 +85,8 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Échec de l\'enregistrement.');
       showMsg(el.titleMsg, 'Titre et synopsis enregistrés.', 'success');
+      el.settingsSummaryTitle.textContent = data.bookTitle ? `— actuellement « ${data.bookTitle} »` : '';
+      document.getElementById('book-settings').open = false;
     } catch (err) {
       showMsg(el.titleMsg, err.message, 'error');
     }

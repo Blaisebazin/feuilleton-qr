@@ -85,10 +85,16 @@ migrer vers un stockage d'objets dédié (Supabase Storage, S3...).
 
 Va sur `/admin.html`, entre ton mot de passe.
 - **Publier** : remplis titre + texte (les paragraphes séparés par une ligne vide
-  deviennent des paragraphes distincts), ajoute une image si tu veux, et publie.
-  Le chapitre devient immédiatement celui affiché par défaut.
+  deviennent des paragraphes distincts), ajoute une ou plusieurs photos si tu veux,
+  et publie. Le chapitre devient immédiatement celui affiché par défaut.
+- **Placer une photo précisément** : tape `[image]` sur sa propre ligne, à l'endroit
+  du texte où tu veux qu'elle apparaisse. Les photos sont utilisées dans l'ordre où
+  tu les ajoutes — la 1ère au 1er `[image]`, la 2e au 2e, etc. Une photo ajoutée sans
+  `[image]` correspondant s'affiche automatiquement à la fin du chapitre. Sans aucun
+  `[image]` dans le texte, la première photo s'affiche en tête (comportement par
+  défaut) et les suivantes en fin de chapitre.
 - **Modifier** : clique sur « Modifier » à côté d'un chapitre de la liste — le
-  formulaire se pré-remplit. Tu peux corriger le texte, ajouter une image qui
-  n'y était pas, la remplacer, ou cocher « Retirer cette image ».
+  formulaire se pré-remplit. Tu peux ajouter de nouvelles photos, ou retirer
+  individuellement une photo existante (bouton × sur sa vignette).
 - **Supprimer** (publication par erreur) : clique sur « Supprimer » à côté du
   chapitre concerné, après confirmation.

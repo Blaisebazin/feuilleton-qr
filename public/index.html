@@ -11,23 +11,18 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <div class="stage">
-    <header class="site-title" id="site-title">&nbsp;</header>
+  <header class="site-header">
+    <div class="site-title" id="site-title">&nbsp;</div>
+  </header>
+
+  <main class="scroll-area" id="scroll-area">
+    <button class="synopsis-toggle" id="synopsis-toggle" hidden>Synopsis <span class="chev">⌄</span></button>
     <p class="site-synopsis" id="site-synopsis" hidden></p>
-    <div class="page" id="page">
-      <div class="postmark" id="postmark">— · —</div>
-      <div class="page-header">
-        <p class="chapter-eyebrow" id="chapter-eyebrow">&nbsp;</p>
-        <h1 class="chapter-title" id="chapter-title">Chargement…</h1>
-      </div>
-      <div class="page-body">
-        <div class="page-content" id="page-content"></div>
-        <div class="scroll-hint" id="scroll-hint">faire défiler pour lire la suite ↓</div>
-      </div>
-      <div class="page-footer">
-        <button class="nav-arrow prev" id="prev-page" aria-label="Remonter d'un écran" disabled>‹</button>
-        <button class="nav-arrow" id="next-page" aria-label="Descendre d'un écran">›</button>
-      </div>
+
+    <div class="chapter-block">
+      <p class="chapter-eyebrow" id="chapter-eyebrow">&nbsp;</p>
+      <h1 class="chapter-title" id="chapter-title">Chargement…</h1>
+      <div id="chapter-content"></div>
     </div>
 
     <div class="below-page">
@@ -41,7 +36,9 @@
         <button id="btn-share">✉ Inviter un lecteur</button>
       </div>
     </div>
-  </div>
+
+    <div class="scroll-hint" id="scroll-hint">faire défiler pour lire la suite ↓</div>
+  </main>
 
   <div class="toast" id="toast"></div>
 

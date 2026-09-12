@@ -114,24 +114,52 @@
     return text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   }
 
+  function makeImageEl(src, alt) {
+    const wrap = document.createElement('div');
+    wrap.className = 'chapter-image';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt;
+    wrap.appendChild(img);
+    return wrap;
+  }
+
+  // Les photos s'insèrent aux emplacements marqués par "[image]" (sur sa propre ligne)
+  // dans le texte, dans l'ordre d'ajout. Les photos en trop (sans marqueur correspondant)
+  // s'ajoutent à la fin. Sans aucun marqueur, la première photo s'affiche en tête,
+  // et les suivantes à la fin (comportement historique conservé par défaut).
   function renderChapterContent() {
     el.content.innerHTML = '';
+    const images = currentChapter.images || [];
+    const blocks = paragraphsOf(currentChapter.text);
+    const markerRegex = /^\[image\]$/i;
+    const hasMarkers = blocks.some((b) => markerRegex.test(b));
 
-    if (currentChapter.image) {
-      const wrap = document.createElement('div');
-      wrap.className = 'chapter-image';
-      const img = document.createElement('img');
-      img.src = currentChapter.image;
-      img.alt = currentChapter.title;
-      wrap.appendChild(img);
-      el.content.appendChild(wrap);
+    let imgIndex = 0;
+
+    if (!hasMarkers && images.length) {
+      el.content.appendChild(makeImageEl(images[0], currentChapter.title));
+      imgIndex = 1;
     }
 
-    for (const text of paragraphsOf(currentChapter.text)) {
+    for (const block of blocks) {
+      if (markerRegex.test(block)) {
+        if (imgIndex < images.length) {
+          el.content.appendChild(makeImageEl(images[imgIndex], currentChapter.title));
+          imgIndex++;
+        }
+        continue;
+      }
       const p = document.createElement('p');
       p.className = 'chapter-p';
-      p.textContent = text;
+      p.textContent = block;
       el.content.appendChild(p);
+    }
+
+    // Photos restantes (uploadées sans marqueur associé) : ajoutées à la fin.
+    while (imgIndex < images.length) {
+      el.content.appendChild(makeImageEl(images[imgIndex], currentChapter.title));
+      imgIndex++;
     }
 
     const sig = document.createElement('p');

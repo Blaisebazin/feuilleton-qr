@@ -1,7 +1,4 @@
 (() => {
-  // Correctif hauteur mobile : 100vh/100dvh ne tient pas toujours compte correctement
-  // de la barre d'adresse qui se réduit/s'agrandit sur mobile. On calcule la vraie
-  // hauteur visible en JS et on l'expose en variable CSS --vh, mise à jour en continu.
   function setViewportHeightVar() {
     document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
   }
@@ -11,14 +8,13 @@
 
   const el = {
     siteTitle: document.getElementById('site-title'),
+    synopsisToggle: document.getElementById('synopsis-toggle'),
     siteSynopsis: document.getElementById('site-synopsis'),
-    postmark: document.getElementById('postmark'),
     eyebrow: document.getElementById('chapter-eyebrow'),
     title: document.getElementById('chapter-title'),
-    content: document.getElementById('page-content'),
+    content: document.getElementById('chapter-content'),
+    scrollArea: document.getElementById('scroll-area'),
     scrollHint: document.getElementById('scroll-hint'),
-    prevPage: document.getElementById('prev-page'),
-    nextPage: document.getElementById('next-page'),
     archiveBadge: document.getElementById('archive-badge'),
     btnPreviousChapter: document.getElementById('btn-previous-chapter'),
     btnHistory: document.getElementById('btn-history'),
@@ -30,19 +26,15 @@
     historyClose: document.getElementById('history-close')
   };
 
-  let chaptersList = [];   // liste légère { id, title, author, publishedAt }
+  let chaptersList = [];
   let currentChapter = null;
-  let currentIndex = 0;    // 0 = dernier chapitre publié
+  let currentIndex = 0;
   let total = 0;
   let bookTitle = '';
 
   const dateFormatterLong = new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric', month: 'long', year: 'numeric'
   });
-  const dateFormatterShort = new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit', month: 'short'
-  });
-  const yearFormatter = new Intl.DateTimeFormat('fr-FR', { year: 'numeric' });
 
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
@@ -65,14 +57,24 @@
       document.title = bookTitle || 'Le Feuilleton';
       if (synopsis) {
         el.siteSynopsis.textContent = synopsis;
-        el.siteSynopsis.hidden = false;
+        el.synopsisToggle.hidden = false;
       } else {
+        el.synopsisToggle.hidden = true;
         el.siteSynopsis.hidden = true;
       }
     } catch {
       /* pas bloquant si ça échoue */
     }
   }
+
+  el.synopsisToggle.addEventListener('click', () => {
+    const isOpen = !el.siteSynopsis.hidden;
+    el.siteSynopsis.hidden = isOpen;
+    el.synopsisToggle.classList.toggle('open', !isOpen);
+    el.synopsisToggle.innerHTML = isOpen
+      ? 'Synopsis <span class="chev">⌄</span>'
+      : 'Masquer le synopsis <span class="chev">⌄</span>';
+  });
 
   async function loadLatest() {
     const data = await fetchJSON('/api/chapters/latest');
@@ -92,6 +94,8 @@
     renderChapterShell();
     renderChapterContent();
     renderChrome();
+    el.scrollArea.scrollTop = 0;
+    requestAnimationFrame(updateScrollHint);
   }
 
   function syncUrl() {
@@ -104,18 +108,14 @@
     const date = new Date(currentChapter.publishedAt);
     el.eyebrow.textContent = `Chapitre diffusé le ${dateFormatterLong.format(date)}`;
     el.title.textContent = currentChapter.title;
-    el.postmark.innerHTML = `${dateFormatterShort.format(date).toUpperCase()}<br>${yearFormatter.format(date)}`;
   }
 
   function paragraphsOf(text) {
     return text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   }
 
-  // Le chapitre entier (image + texte + signature) est rendu d'un coup dans un
-  // conteneur qui défile nativement — plus de découpage artificiel en "pages".
   function renderChapterContent() {
     el.content.innerHTML = '';
-    el.content.scrollTop = 0;
 
     if (currentChapter.image) {
       const wrap = document.createElement('div');
@@ -138,37 +138,21 @@
     sig.className = 'signature';
     sig.textContent = `— ${currentChapter.author}`;
     el.content.appendChild(sig);
-
-    // Laisse le temps au navigateur de calculer les dimensions avant de juger
-    // s'il y a de quoi défiler.
-    requestAnimationFrame(updateScrollButtons);
   }
 
-  function updateScrollButtons() {
-    const { scrollTop, scrollHeight, clientHeight } = el.content;
-    const atTop = scrollTop <= 2;
-    const atBottom = scrollTop + clientHeight >= scrollHeight - 2;
-
-    el.prevPage.disabled = atTop;
-    el.nextPage.disabled = atBottom;
-
-    const canScroll = scrollHeight > clientHeight + 2;
+  function updateScrollHint() {
+    const { scrollTop, scrollHeight, clientHeight } = el.scrollArea;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 4;
+    const canScroll = scrollHeight > clientHeight + 4;
     el.scrollHint.classList.toggle('hidden-hint', !canScroll || atBottom);
   }
 
-  function scrollByScreen(direction) {
-    el.content.scrollBy({ top: direction * el.content.clientHeight * 0.85, behavior: 'smooth' });
-  }
-
-  el.prevPage.addEventListener('click', () => scrollByScreen(-1));
-  el.nextPage.addEventListener('click', () => scrollByScreen(1));
-
   let scrollTicking = false;
-  el.content.addEventListener('scroll', () => {
+  el.scrollArea.addEventListener('scroll', () => {
     if (scrollTicking) return;
     scrollTicking = true;
     requestAnimationFrame(() => {
-      updateScrollButtons();
+      updateScrollHint();
       scrollTicking = false;
     });
   });
@@ -263,7 +247,7 @@
   let resizeTimer = null;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(updateScrollButtons, 200);
+    resizeTimer = setTimeout(updateScrollHint, 200);
   });
 
   async function boot() {

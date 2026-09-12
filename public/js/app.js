@@ -1,4 +1,14 @@
 (() => {
+  // Correctif hauteur mobile : 100vh/100dvh ne tient pas toujours compte correctement
+  // de la barre d'adresse qui se réduit/s'agrandit sur mobile. On calcule la vraie
+  // hauteur visible en JS et on l'expose en variable CSS --vh, mise à jour en continu.
+  function setViewportHeightVar() {
+    document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+  }
+  setViewportHeightVar();
+  window.addEventListener('resize', setViewportHeightVar);
+  window.addEventListener('orientationchange', setViewportHeightVar);
+
   const RESERVED_SIGNATURE_HEIGHT = 70; // espace réservé pour la signature en bas de la dernière page
   const PAGE_BUFFER = 6;
 

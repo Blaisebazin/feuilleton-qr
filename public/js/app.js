@@ -9,20 +9,14 @@
   window.addEventListener('resize', setViewportHeightVar);
   window.addEventListener('orientationchange', setViewportHeightVar);
 
-  const RESERVED_SIGNATURE_HEIGHT = 70; // espace réservé pour la signature en bas de la dernière page
-  const PAGE_BUFFER = 6;
-
   const el = {
     siteTitle: document.getElementById('site-title'),
     siteSynopsis: document.getElementById('site-synopsis'),
     postmark: document.getElementById('postmark'),
     eyebrow: document.getElementById('chapter-eyebrow'),
     title: document.getElementById('chapter-title'),
-    imageWrap: document.getElementById('chapter-image'),
-    imageEl: document.getElementById('chapter-image-el'),
-    measurer: document.getElementById('measurer'),
     content: document.getElementById('page-content'),
-    dots: document.getElementById('page-dots'),
+    scrollHint: document.getElementById('scroll-hint'),
     prevPage: document.getElementById('prev-page'),
     nextPage: document.getElementById('next-page'),
     archiveBadge: document.getElementById('archive-badge'),
@@ -40,8 +34,6 @@
   let currentChapter = null;
   let currentIndex = 0;    // 0 = dernier chapitre publié
   let total = 0;
-  let pages = [];
-  let pageIndex = 0;
   let bookTitle = '';
 
   const dateFormatterLong = new Intl.DateTimeFormat('fr-FR', {
@@ -96,11 +88,9 @@
     currentChapter = chapter;
     currentIndex = index;
     total = totalCount;
-    pageIndex = 0;
     syncUrl();
     renderChapterShell();
-    paginate();
-    renderPage();
+    renderChapterContent();
     renderChrome();
   }
 
@@ -115,89 +105,73 @@
     el.eyebrow.textContent = `Chapitre diffusé le ${dateFormatterLong.format(date)}`;
     el.title.textContent = currentChapter.title;
     el.postmark.innerHTML = `${dateFormatterShort.format(date).toUpperCase()}<br>${yearFormatter.format(date)}`;
-
-    if (currentChapter.image) {
-      el.imageWrap.hidden = false;
-      el.imageEl.src = currentChapter.image;
-      el.imageEl.alt = currentChapter.title;
-    } else {
-      el.imageWrap.hidden = true;
-      el.imageEl.removeAttribute('src');
-    }
   }
 
   function paragraphsOf(text) {
     return text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   }
 
-  function paginate() {
-    const paragraphs = paragraphsOf(currentChapter.text);
-    const available = Math.max(
-      el.content.clientHeight - RESERVED_SIGNATURE_HEIGHT - PAGE_BUFFER,
-      120
-    );
-
-    el.measurer.innerHTML = '';
-    el.measurer.style.width = `${el.content.clientWidth}px`;
-
-    pages = [];
-    let current = [];
-
-    const makeP = (text) => {
-      const p = document.createElement('p');
-      p.className = 'chapter-p';
-      p.textContent = text;
-      return p;
-    };
-
-    // On mesure en ajoutant les paragraphes un par un dans le measurer caché.
-    el.measurer.innerHTML = '';
-    for (const para of paragraphs) {
-      const testNode = makeP(para);
-      el.measurer.appendChild(testNode);
-      if (el.measurer.scrollHeight > available && current.length > 0) {
-        // La page déborde : on la clôt sans ce paragraphe, on redémarre le measurer avec lui seul.
-        pages.push(current);
-        current = [para];
-        el.measurer.innerHTML = '';
-        el.measurer.appendChild(makeP(para));
-      } else {
-        current.push(para);
-      }
-    }
-    if (current.length) pages.push(current);
-    if (!pages.length) pages = [['']];
-
-    el.measurer.innerHTML = '';
-  }
-
-  function renderPage() {
-    const paras = pages[pageIndex] || [];
+  // Le chapitre entier (image + texte + signature) est rendu d'un coup dans un
+  // conteneur qui défile nativement — plus de découpage artificiel en "pages".
+  function renderChapterContent() {
     el.content.innerHTML = '';
-    for (const text of paras) {
+    el.content.scrollTop = 0;
+
+    if (currentChapter.image) {
+      const wrap = document.createElement('div');
+      wrap.className = 'chapter-image';
+      const img = document.createElement('img');
+      img.src = currentChapter.image;
+      img.alt = currentChapter.title;
+      wrap.appendChild(img);
+      el.content.appendChild(wrap);
+    }
+
+    for (const text of paragraphsOf(currentChapter.text)) {
       const p = document.createElement('p');
       p.className = 'chapter-p';
       p.textContent = text;
       el.content.appendChild(p);
     }
 
-    if (pageIndex === pages.length - 1) {
-      const sig = document.createElement('p');
-      sig.className = 'signature';
-      sig.textContent = `— ${currentChapter.author}`;
-      el.content.appendChild(sig);
-    }
+    const sig = document.createElement('p');
+    sig.className = 'signature';
+    sig.textContent = `— ${currentChapter.author}`;
+    el.content.appendChild(sig);
 
-    el.dots.innerHTML = '';
-    pages.forEach((_, i) => {
-      const dot = document.createElement('span');
-      if (i === pageIndex) dot.className = 'active';
-      el.dots.appendChild(dot);
-    });
-
-    el.prevPage.disabled = pageIndex === 0;
-    el.nextPage.disabled = pageIndex === pages.length - 1;
+    // Laisse le temps au navigateur de calculer les dimensions avant de juger
+    // s'il y a de quoi défiler.
+    requestAnimationFrame(updateScrollButtons);
   }
+
+  function updateScrollButtons() {
+    const { scrollTop, scrollHeight, clientHeight } = el.content;
+    const atTop = scrollTop <= 2;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 2;
+
+    el.prevPage.disabled = atTop;
+    el.nextPage.disabled = atBottom;
+
+    const canScroll = scrollHeight > clientHeight + 2;
+    el.scrollHint.classList.toggle('hidden-hint', !canScroll || atBottom);
+  }
+
+  function scrollByScreen(direction) {
+    el.content.scrollBy({ top: direction * el.content.clientHeight * 0.85, behavior: 'smooth' });
+  }
+
+  el.prevPage.addEventListener('click', () => scrollByScreen(-1));
+  el.nextPage.addEventListener('click', () => scrollByScreen(1));
+
+  let scrollTicking = false;
+  el.content.addEventListener('scroll', () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(() => {
+      updateScrollButtons();
+      scrollTicking = false;
+    });
+  });
 
   function renderChrome() {
     const isArchive = currentIndex > 0;
@@ -208,13 +182,6 @@
     el.btnLatest.hidden = !isArchive;
     el.btnPreviousChapter.disabled = currentIndex >= total - 1;
   }
-
-  el.prevPage.addEventListener('click', () => {
-    if (pageIndex > 0) { pageIndex--; renderPage(); }
-  });
-  el.nextPage.addEventListener('click', () => {
-    if (pageIndex < pages.length - 1) { pageIndex++; renderPage(); }
-  });
 
   el.btnPreviousChapter.addEventListener('click', async () => {
     if (currentIndex >= total - 1) return;
@@ -296,12 +263,7 @@
   let resizeTimer = null;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      if (!currentChapter) return;
-      pageIndex = 0;
-      paginate();
-      renderPage();
-    }, 200);
+    resizeTimer = setTimeout(updateScrollButtons, 200);
   });
 
   async function boot() {
